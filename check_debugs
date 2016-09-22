@@ -1,5 +1,8 @@
 #! /bin/bash
 
+echo "Fetching the date of each debug..."
+for I in *-riak-debug; do NODE=${I//-riak-debug/}; echo $I | awk -F/ '{print $(NF-1)}'; done; 
+
 echo "Creating Combined console.log."
 for I in *-riak-debug; do NODE=${I//-riak-debug/}; echo "	Processing ${NODE}..."; for J in {$I/logs/platform_log_dir/console.log,$I/logs/platform_log_dir/console.log.?}; do sed -n -e '/^201/!{H;d;};/^201/{x;s/\n/ /g;p;};${x;s/\n/ /g;p;}' $J | awk '!/^$/{print $1"T"$2,"'${NODE}'",$0}' | sed 's/\([^ ]*\) \([^ ]*\) \([^ ]*\) \([^ ]*\) \(.*\)/\1 \2 \5/' >> temp.log ; done; done; sort temp.log > combined_console.log;rm temp.log;
 printf "\n"
@@ -75,10 +78,12 @@ grep -s -H 'AnonHugePages' */commands/meminfo | awk -F":| *" '$4 > 0 {print  $1 
 printf "\n"
 
 #IO tuning
+echo "Checking IO tuning"
 
 #TCP connections in netstat  Compare to sysctl tcp memory
 
 #Print date of debug
+echo "The debug "
 
 #Other meminfo stuff? Figure out warning thresholds
 

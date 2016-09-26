@@ -1,14 +1,15 @@
 #! /bin/bash
 
 echo "Fetching the date of each debug..."
-for I in *-riak-debug; do NODE=${I//-riak-debug/}; echo $I | awk -F/ '{print $(NF-1)}'; done; 
+for I in *-riak-debug; do NODE=${I//-riak-debug/}; echo "`echo $I | awk -F/ '{print $(NF-1)}'`: `cat $I/commands/date`"; done;
+printf "\n"
 
 echo "Creating Combined console.log."
-for I in *-riak-debug; do NODE=${I//-riak-debug/}; echo "	Processing ${NODE}..."; for J in {$I/logs/platform_log_dir/console.log,$I/logs/platform_log_dir/console.log.?}; do sed -n -e '/^201/!{H;d;};/^201/{x;s/\n/ /g;p;};${x;s/\n/ /g;p;}' $J | awk '!/^$/{print $1"T"$2,"'${NODE}'",$0}' | sed 's/\([^ ]*\) \([^ ]*\) \([^ ]*\) \([^ ]*\) \(.*\)/\1 \2 \5/' >> temp.log ; done; done; sort temp.log > combined_console.log;rm temp.log;
+for I in *-riak-debug; do NODE=${I//-riak-debug/}; for J in {$I/logs/platform_log_dir/console.log,$I/logs/platform_log_dir/console.log.?}; do sed -n -e '/^201/!{H;d;};/^201/{x;s/\n/ /g;p;};${x;s/\n/ /g;p;}' $J | awk '!/^$/{print $1"T"$2,"'${NODE}'",$0}' | sed 's/\([^ ]*\) \([^ ]*\) \([^ ]*\) \([^ ]*\) \(.*\)/\1 \2 \5/' >> temp.log ; done; done; sort temp.log > combined_console.log;rm temp.log;
 printf "\n"
 
 echo "Creating Combined error.log."
-for I in *-riak-debug; do NODE=${I//-riak-debug/}; echo "	Processing ${NODE}..."; for J in {$I/logs/platform_log_dir/error.log,$I/logs/platform_log_dir/error.log.?}; do sed -n -e '/^201/!{H;d;};/^201/{x;s/\n/ /g;p;};${x;s/\n/ /g;p;}' $J | awk '!/^$/{print $1"T"$2,"'${NODE}'",$0}' | sed 's/\([^ ]*\) \([^ ]*\) \([^ ]*\) \([^ ]*\) \(.*\)/\1 \2 \5/' >> temp.log ; done; done; sort temp.log > combined_error.log;rm temp.log;
+for I in *-riak-debug; do NODE=${I//-riak-debug/}; for J in {$I/logs/platform_log_dir/error.log,$I/logs/platform_log_dir/error.log.?}; do sed -n -e '/^201/!{H;d;};/^201/{x;s/\n/ /g;p;};${x;s/\n/ /g;p;}' $J | awk '!/^$/{print $1"T"$2,"'${NODE}'",$0}' | sed 's/\([^ ]*\) \([^ ]*\) \([^ ]*\) \([^ ]*\) \(.*\)/\1 \2 \5/' >> temp.log ; done; done; sort temp.log > combined_error.log;rm temp.log;
 printf "\n"
 
 echo "Checking for LevelDB Compaction Errors."
@@ -73,20 +74,17 @@ printf "\n"
 	
 	
 #Transparent Hugepages
-echo "Checking for Transparent Hugepages"
+echo "Checking for Transparent Hugepages (values above 0)."
 grep -s -H 'AnonHugePages' */commands/meminfo | awk -F":| *" '$4 > 0 {print  $1 ": "  $4 " " $5}'
 printf "\n"
 
 #IO tuning
-echo "Checking IO tuning"
+echo "Checking for dirty_ratio and dirty_background_ratio."
+grep -s -H -e 'dirty.*ratio' */commands/sysctl | awk '$3 > 0 {print $1 ": " $3}'
+printf "\n"
 
-#TCP connections in netstat  Compare to sysctl tcp memory
 
-#Print date of debug
-echo "The debug "
-
-#Other meminfo stuff? Figure out warning thresholds
-
-#Maybe work in something that can parse cluster-info
-
-#Organize Repl connections
+#TCP connections in netstat
+echo "Checking for suspended TCP connections."
+echo "Found `grep -s 'TIME_WAIT' */commands/netstat_an | wc -l` connections in TIME_WAIT state."
+printf "\n"
